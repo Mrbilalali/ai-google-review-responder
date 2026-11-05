@@ -1,0 +1,862 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <link rel="icon" href="data:," />
+    <title>AI Google Review Responder</title>
+    <meta property="og:title" content="AI Google Review Responder - Interactive Demo" />
+    <meta property="og:description" content="A Google review comes in. Watch the AI draft an on-brand reply in seconds - pick a review, choose a tone, and post the simulated reply." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://ai-google-review-responder-mr-bilal-alis-projects.vercel.app" />
+    <meta property="og:image" content="https://ai-google-review-responder-mr-bilal-alis-projects.vercel.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="627" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="AI Google Review Responder - Interactive Demo" />
+    <meta name="twitter:description" content="A Google review comes in. Watch the AI draft an on-brand reply in seconds - pick a review, choose a tone, and post the simulated reply." />
+    <meta name="twitter:image" content="https://ai-google-review-responder-mr-bilal-alis-projects.vercel.app/og-image.png" />
+    <style>
+      :root {
+        --bg: #eef4ef;
+        --surface: #ffffff;
+        --surface-soft: #f4f8f4;
+        --ink: #16302a;
+        --ink-soft: #47635a;
+        --accent: #0d6b4d;
+        --accent-dark: #0a5439;
+        --accent-soft: #dcefe4;
+        --line: #cfdfd3;
+        --gold: #e8a020;
+        --gold-empty: #d5ddd6;
+        --warn-bg: #fdf3e0;
+        --warn-line: #ecd9ae;
+        --warn-ink: #7a5a17;
+        --radius: 16px;
+        --shadow: 0 2px 10px rgba(13, 80, 57, 0.08), 0 1px 3px rgba(13, 80, 57, 0.06);
+        --shadow-lift: 0 8px 24px rgba(13, 80, 57, 0.14);
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Avenir Next", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+      }
+      h1, h2, h3 { line-height: 1.2; margin: 0; }
+
+      /* Sticky simulation bar — label stays visible at all times */
+      .sim-bar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: var(--accent-dark);
+        color: #eaf6ef;
+        text-align: center;
+        font-size: 0.85rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        padding: 9px 16px;
+      }
+
+      .wrap {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 28px 18px 64px;
+      }
+
+      header.hero { text-align: center; margin-bottom: 8px; }
+      .hero-badge {
+        display: inline-block;
+        background: var(--warn-bg);
+        border: 1px solid var(--warn-line);
+        color: var(--warn-ink);
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 6px 14px;
+        border-radius: 999px;
+        margin-bottom: 16px;
+      }
+      h1 {
+        font-size: clamp(1.9rem, 5.5vw, 2.7rem);
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: var(--ink);
+      }
+      h1 .accent { color: var(--accent); }
+      .subtitle {
+        font-size: clamp(1rem, 2.8vw, 1.15rem);
+        color: var(--ink-soft);
+        max-width: 540px;
+        margin: 12px auto 0;
+      }
+      .biz-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 18px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 7px 16px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        box-shadow: var(--shadow);
+      }
+      .biz-chip .pin { color: var(--accent); font-weight: 800; }
+      .biz-chip .fictional { color: var(--ink-soft); font-weight: 500; }
+
+      /* Progress steps */
+      .steps {
+        display: flex;
+        justify-content: space-between;
+        gap: 6px;
+        margin: 30px 0 22px;
+      }
+      .step-dot {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        text-align: center;
+      }
+      .step-dot .num {
+        width: 34px; height: 34px;
+        border-radius: 50%;
+        background: var(--surface);
+        border: 2px solid var(--line);
+        color: var(--ink-soft);
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 0.9rem;
+        transition: background 0.25s, border-color 0.25s, color 0.25s;
+      }
+      .step-dot .lbl { font-size: 0.78rem; font-weight: 600; color: var(--ink-soft); }
+      .step-dot.active .num { background: var(--accent); border-color: var(--accent); color: #fff; }
+      .step-dot.active .lbl { color: var(--accent-dark); }
+      .step-dot.done .num { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-dark); }
+
+      .timer-chip {
+        display: none;
+        align-items: center;
+        gap: 8px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 6px 14px;
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: var(--accent-dark);
+        box-shadow: var(--shadow);
+        margin: 0 auto 18px;
+        width: fit-content;
+      }
+      .timer-chip.on { display: flex; }
+      .timer-chip .pulse {
+        width: 9px; height: 9px; border-radius: 50%;
+        background: var(--accent);
+        animation: pulse 1.2s ease-in-out infinite;
+      }
+      @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 22px;
+      }
+      .section-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      .section-hint { color: var(--ink-soft); font-size: 0.95rem; margin: 0 0 18px; }
+
+      /* Review cards */
+      .review-grid { display: grid; gap: 14px; }
+      @media (min-width: 640px) { .review-grid { grid-template-columns: 1fr; } }
+      button.review-card {
+        width: 100%;
+        text-align: left;
+        font: inherit;
+        color: inherit;
+        background: var(--surface-soft);
+        border: 2px solid var(--line);
+        border-radius: var(--radius);
+        padding: 18px;
+        cursor: pointer;
+        transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+      }
+      button.review-card:hover, button.review-card:focus-visible {
+        border-color: var(--accent);
+        box-shadow: var(--shadow-lift);
+        outline: none;
+      }
+      button.review-card:active { transform: scale(0.995); }
+      button.review-card.selected {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+        box-shadow: var(--shadow-lift);
+      }
+      .review-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+        flex-wrap: wrap;
+      }
+      .avatar {
+        width: 42px; height: 42px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 700;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.05rem;
+        flex-shrink: 0;
+      }
+      .reviewer { font-weight: 700; }
+      .review-date { color: var(--ink-soft); font-size: 0.85rem; }
+      .via { margin-left: auto; font-size: 0.8rem; color: var(--ink-soft); font-weight: 600; }
+      .stars { display: inline-flex; gap: 2px; vertical-align: middle; }
+      .stars svg { width: 18px; height: 18px; }
+      .review-text { margin: 6px 0 0; font-size: 0.98rem; }
+      .pick-tag {
+        display: inline-block;
+        margin-top: 12px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--accent-dark);
+      }
+
+      .hidden { display: none !important; }
+
+      /* Selected review recap */
+      .recap {
+        background: var(--surface-soft);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 16px 18px;
+        margin-bottom: 18px;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        font: inherit;
+        font-weight: 700;
+        font-size: 1rem;
+        border-radius: 12px;
+        border: 2px solid transparent;
+        padding: 14px 26px;
+        min-height: 54px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background 0.2s, border-color 0.2s, transform 0.12s;
+      }
+      .btn:active { transform: scale(0.985); }
+      .btn-primary { background: var(--accent); color: #fff; }
+      .btn-primary:hover, .btn-primary:focus-visible { background: var(--accent-dark); outline: none; }
+      .btn-primary:disabled { background: #9db8ab; cursor: default; }
+      .btn-ghost {
+        background: var(--surface);
+        border-color: var(--line);
+        color: var(--accent-dark);
+      }
+      .btn-ghost:hover, .btn-ghost:focus-visible { border-color: var(--accent); outline: none; }
+      .btn-block { width: 100%; }
+
+      /* Drafting animation */
+      .drafting {
+        display: none;
+        align-items: center;
+        gap: 12px;
+        padding: 22px 4px 8px;
+        color: var(--accent-dark);
+        font-weight: 600;
+      }
+      .drafting.on { display: flex; }
+      .typing-dots { display: inline-flex; gap: 5px; }
+      .typing-dots span {
+        width: 9px; height: 9px; border-radius: 50%;
+        background: var(--accent);
+        animation: bounce 1s ease-in-out infinite;
+      }
+      .typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+      .typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+      @keyframes bounce { 0%,100% { transform: translateY(0); opacity: 0.5; } 50% { transform: translateY(-5px); opacity: 1; } }
+      .shimmer-lines { margin-top: 14px; }
+      .shimmer {
+        height: 13px;
+        border-radius: 6px;
+        background: linear-gradient(90deg, var(--accent-soft) 25%, #eef7f1 50%, var(--accent-soft) 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.2s linear infinite;
+        margin-bottom: 10px;
+      }
+      .shimmer.short { width: 62%; }
+      @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+      /* Reply editor */
+      .reply-box label {
+        display: block;
+        font-weight: 700;
+        font-size: 0.95rem;
+        margin-bottom: 4px;
+      }
+      .reply-box .edit-hint { color: var(--ink-soft); font-size: 0.85rem; margin: 0 0 10px; }
+      textarea {
+        width: 100%;
+        font: inherit;
+        font-size: 1rem;
+        line-height: 1.55;
+        color: var(--ink);
+        background: var(--surface-soft);
+        border: 2px solid var(--line);
+        border-radius: 12px;
+        padding: 14px 16px;
+        min-height: 170px;
+        resize: vertical;
+      }
+      textarea:focus { outline: none; border-color: var(--accent); background: #fff; }
+
+      .tone-row { margin: 20px 0 6px; }
+      .tone-row .tone-label { font-weight: 700; font-size: 0.95rem; margin-bottom: 10px; }
+      .tone-btns { display: flex; flex-wrap: wrap; gap: 10px; }
+      .tone-btn {
+        font: inherit;
+        font-size: 0.95rem;
+        font-weight: 700;
+        padding: 12px 18px;
+        min-height: 50px;
+        border-radius: 999px;
+        border: 2px solid var(--line);
+        background: var(--surface);
+        color: var(--ink);
+        cursor: pointer;
+        transition: border-color 0.2s, background 0.2s, color 0.2s;
+      }
+      .tone-btn:hover, .tone-btn:focus-visible { border-color: var(--accent); outline: none; }
+      .tone-btn[aria-pressed="true"] {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+
+      .post-row { margin-top: 20px; }
+      .post-note { text-align: center; color: var(--ink-soft); font-size: 0.85rem; margin-top: 10px; }
+
+      /* Outcome */
+      .outcome-card {
+        border: 2px solid var(--accent);
+        background: linear-gradient(180deg, #f2faf5, var(--surface));
+      }
+      .posted-line {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 14px;
+      }
+      .check-badge {
+        width: 52px; height: 52px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+      }
+      .check-badge svg { width: 28px; height: 28px; }
+      .posted-line h2 { font-size: 1.45rem; font-weight: 800; color: var(--accent-dark); }
+      .posted-line .sub { color: var(--ink-soft); font-size: 0.92rem; }
+      .outcome-text { font-size: 1.02rem; margin: 0 0 12px; }
+      .general-line {
+        background: var(--accent-soft);
+        border-radius: 10px;
+        padding: 12px 16px;
+        font-size: 0.95rem;
+        margin: 0 0 18px;
+      }
+      .ai-did h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+      .ai-did ul { margin: 0; padding: 0; list-style: none; }
+      .ai-did li {
+        padding: 7px 0 7px 30px;
+        position: relative;
+        font-size: 0.96rem;
+        border-bottom: 1px solid var(--surface-soft);
+      }
+      .ai-did li:last-child { border-bottom: none; }
+      .ai-did li::before {
+        content: "";
+        position: absolute;
+        left: 2px; top: 12px;
+        width: 16px; height: 16px;
+        border-radius: 50%;
+        background: var(--accent-soft);
+      }
+      .ai-did li::after {
+        content: "";
+        position: absolute;
+        left: 7px; top: 15px;
+        width: 5px; height: 9px;
+        border: solid var(--accent-dark);
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+      }
+      .posted-reply {
+        margin-top: 18px;
+        background: var(--surface-soft);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 14px 16px;
+      }
+      .posted-reply .pr-label { font-size: 0.8rem; font-weight: 700; color: var(--ink-soft); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 6px; }
+      .posted-reply p { margin: 0; font-size: 0.96rem; white-space: pre-wrap; }
+
+      /* CTA */
+      .cta-card {
+        margin-top: 22px;
+        background: var(--accent-dark);
+        color: #eaf6ef;
+        border-radius: var(--radius);
+        padding: 28px 24px;
+        text-align: center;
+        box-shadow: var(--shadow-lift);
+      }
+      .cta-card h2 { font-size: 1.5rem; font-weight: 800; color: #fff; margin-bottom: 8px; }
+      .cta-card p { margin: 0 auto 20px; max-width: 480px; color: #cfe8d9; font-size: 1rem; }
+      .cta-btn {
+        background: #fff;
+        color: var(--accent-dark);
+        font-size: 1.05rem;
+        padding: 15px 30px;
+      }
+      .cta-btn:hover, .cta-btn:focus-visible { background: var(--accent-soft); outline: none; }
+      .cta-small { display: block; margin-top: 14px; font-size: 0.82rem; color: #a9cdb9; }
+
+      .restart-row { text-align: center; margin-top: 24px; }
+
+      footer {
+        text-align: center;
+        color: var(--ink-soft);
+        font-size: 0.85rem;
+        margin-top: 44px;
+      }
+      footer .offer { font-weight: 600; color: var(--ink); }
+
+      section { margin-bottom: 22px; scroll-margin-top: 60px; }
+
+      @media (prefers-reduced-motion: reduce) {
+        html { scroll-behavior: auto; }
+        .typing-dots span, .shimmer, .timer-chip .pulse { animation: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sim-bar">Scripted simulation — no real reviews, replies, or bookings.</div>
+
+    <div class="wrap">
+      <header class="hero">
+        <span class="hero-badge">Scripted simulation — no real reviews, replies, or bookings</span>
+        <h1>AI Google Review <span class="accent">Responder</span></h1>
+        <p class="subtitle">A new Google review just came in. Watch the AI draft an on-brand reply in seconds.</p>
+        <div class="biz-chip">
+          <span class="pin" aria-hidden="true">●</span>
+          Willow Creek Dental Studio · Austin, TX
+          <span class="fictional">(fictional business)</span>
+        </div>
+      </header>
+
+      <nav class="steps" aria-label="Demo progress">
+        <div class="step-dot active" id="dot-1"><span class="num">1</span><span class="lbl">Pick a review</span></div>
+        <div class="step-dot" id="dot-2"><span class="num">2</span><span class="lbl">Draft the reply</span></div>
+        <div class="step-dot" id="dot-3"><span class="num">3</span><span class="lbl">Choose the tone</span></div>
+        <div class="step-dot" id="dot-4"><span class="num">4</span><span class="lbl">Post it</span></div>
+      </nav>
+
+      <div class="timer-chip" id="timerChip" role="timer" aria-label="Elapsed time since you picked a review">
+        <span class="pulse" aria-hidden="true"></span>
+        <span>Live timer: <span id="timerText">0s</span></span>
+      </div>
+
+      <!-- STEP 1 -->
+      <section id="step1" aria-labelledby="step1Title">
+        <div class="card">
+          <h2 class="section-title" id="step1Title">Step 1 — Pick an incoming review</h2>
+          <p class="section-hint">These just landed on Willow Creek Dental Studio's Google profile. Tap one to respond to it.</p>
+          <div class="review-grid" id="reviewGrid" role="group" aria-label="Choose a review"></div>
+        </div>
+      </section>
+
+      <!-- STEP 2–4 -->
+      <section id="step2" class="hidden" aria-labelledby="step2Title">
+        <div class="card">
+          <h2 class="section-title" id="step2Title">Step 2 — Draft the reply</h2>
+          <p class="section-hint">Here's the review you picked. The AI reads it and drafts a reply in the studio's voice.</p>
+
+          <div class="recap" id="recap"></div>
+
+          <button class="btn btn-primary btn-block" id="draftBtn" type="button">Draft AI reply</button>
+
+          <div class="drafting" id="drafting" aria-live="polite">
+            <span class="typing-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+            <span id="draftingText">AI is reading the review and drafting…</span>
+          </div>
+          <div class="shimmer-lines hidden" id="shimmerLines" aria-hidden="true">
+            <div class="shimmer"></div>
+            <div class="shimmer"></div>
+            <div class="shimmer short"></div>
+          </div>
+
+          <div class="reply-box hidden" id="replyBox">
+            <div class="tone-row">
+              <p class="tone-label" id="toneStepTitle">Step 3 — Choose the tone</p>
+              <div class="tone-btns" role="group" aria-label="Reply tone">
+                <button class="tone-btn" type="button" data-tone="warm" aria-pressed="true">Warm &amp; grateful</button>
+                <button class="tone-btn" type="button" data-tone="professional" aria-pressed="false">Professional</button>
+                <button class="tone-btn" type="button" data-tone="apologetic" aria-pressed="false">Apologetic &amp; solution-focused</button>
+              </div>
+            </div>
+
+            <label for="replyText">AI-drafted reply</label>
+            <p class="edit-hint">You can edit this before posting — tweak any word.</p>
+            <textarea id="replyText" rows="7"></textarea>
+
+            <div class="post-row">
+              <p class="tone-label" style="font-weight:700; margin-bottom:10px;">Step 4 — Post it</p>
+              <button class="btn btn-primary btn-block" id="postBtn" type="button">Post reply (simulated)</button>
+              <p class="post-note">Simulated post — nothing is sent anywhere.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- OUTCOME -->
+      <section id="outcome" class="hidden" aria-labelledby="outcomeTitle">
+        <div class="card outcome-card">
+          <div class="posted-line">
+            <span class="check-badge" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </span>
+            <div>
+              <h2 id="outcomeTitle">Reply posted in <span id="postedSeconds">0</span> <span id="postedUnit">seconds</span></h2>
+              <span class="sub">From picking the review to a live reply — timed on the clock above.</span>
+            </div>
+          </div>
+          <p class="outcome-text" id="outcomeText"></p>
+          <p class="general-line">Responding promptly and personally to reviews is one of the simplest ways a local business builds trust — and it helps your Google profile look active and cared for in local search.</p>
+          <div class="ai-did">
+            <h3>What the AI did</h3>
+            <ul id="aiDidList"></ul>
+          </div>
+          <div class="posted-reply">
+            <div class="pr-label">Your posted reply (simulated)</div>
+            <p id="postedReplyText"></p>
+          </div>
+        </div>
+
+        <div class="cta-card">
+          <h2>Want replies like this for your business?</h2>
+          <p>Every review answered, in your voice, within minutes — while you focus on your customers. Book a free discovery call and we'll map out how it would work for you.</p>
+          <a class="btn cta-btn" href="https://cal.com/mrbilalali/discovery-call" target="_blank" rel="noopener">Book a free discovery call</a>
+          <span class="cta-small">Free 30-minute call · No obligation · Built by Bilal Ali, AI automation expert</span>
+        </div>
+
+        <div class="restart-row">
+          <button class="btn btn-ghost" id="restartBtn" type="button">Start over — try another review</button>
+        </div>
+      </section>
+
+      <footer>
+        <p class="offer">Bilal Ali builds AI voice agents that answer every lead in 60 seconds — plus review responders like this one.</p>
+        <p>Demo #9 · Willow Creek Dental Studio, all reviewers, and all reviews on this page are fictional. Nothing you type here leaves your browser.</p>
+      </footer>
+    </div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        var STAR_FILLED = '<svg viewBox="0 0 24 24" fill="#e8a020" aria-hidden="true"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>';
+        var STAR_EMPTY = '<svg viewBox="0 0 24 24" fill="#d5ddd6" aria-hidden="true"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>';
+
+        function starsHTML(n) {
+          var out = '<span class="stars" role="img" aria-label="' + n + ' out of 5 stars">';
+          for (var i = 0; i < 5; i++) out += i < n ? STAR_FILLED : STAR_EMPTY;
+          return out + "</span>";
+        }
+
+        var REVIEWS = [
+          {
+            id: "sarah",
+            name: "Sarah M.",
+            initial: "S",
+            stars: 5,
+            date: "Nov 3, 2026",
+            text: "I was honestly nervous about my cleaning, but the hygienist was so gentle and explained everything as she went. My appointment started right on time and I was out the door in under an hour. Best dental experience I've had in Austin!",
+            replies: {
+              warm: "Thank you so much, Sarah! We're thrilled your visit felt gentle and easy — our hygienist will be so happy to hear this. Starting on time matters to us, and we're glad we could get you in and out without a long wait. We look forward to seeing your smile at your next visit!\n\n— The Willow Creek Dental Studio team",
+              professional: "Thank you for your review, Sarah. We're glad your cleaning was comfortable and that your appointment ran on schedule. We appreciate you choosing Willow Creek Dental Studio, and we look forward to your next visit.",
+              apologetic: "Thank you, Sarah — and we're sorry you had to walk in feeling nervous. We're glad the visit itself put you at ease: a gentle touch, clear explanations, and an on-time start are exactly what we aim for. Thank you for trusting us with your smile, and please reach out any time before your next visit if there's anything we can do to help you feel even more comfortable."
+            },
+            outcome: "A warm public thank-you now sits under this review — the first thing future patients see. It's social proof that builds trust before anyone even books.",
+            aiDid: [
+              "Picked up on the specifics she praised — the gentle hygienist and the on-time start — instead of replying with a generic thanks",
+              "Matched the studio's friendly, welcoming tone",
+              "Thanked her publicly, where future patients will read it",
+              "Invited her back for her next visit"
+            ]
+          },
+          {
+            id: "james",
+            name: "James R.",
+            initial: "J",
+            stars: 4,
+            date: "Nov 1, 2026",
+            text: "Great cleaning and friendly staff overall. My only complaint is I waited about 20 minutes past my appointment time before being called back. I'd still come back, but I hope the schedule runs tighter next time.",
+            replies: {
+              warm: "Thank you, James! We're so glad you enjoyed your cleaning and our team. We're sorry about the 20-minute wait, though — your time matters to us, and we're tightening up our scheduling so it doesn't happen again. We can't wait to welcome you back for a smoother visit!",
+              professional: "Thank you for your feedback, James. We're pleased the cleaning and our staff met your expectations. We apologize for the wait past your appointment time; we're reviewing our scheduling to prevent delays like this. We appreciate your patience and look forward to your next visit.",
+              apologetic: "James, we're really sorry you waited 20 minutes past your appointment time — that's not the experience we want anyone to have. Thank you for the kind words about your cleaning and our team, and for your patience that day. We've flagged this with our front desk so the schedule runs tighter. If you'd like, call us at (512) 555-0148 and we'll make sure your next appointment is a priority."
+            },
+            outcome: "James feels heard instead of brushed off, and every reader sees a business that owns its mistakes. A handled-well 4-star review becomes a reason to book, not a reason to hesitate.",
+            aiDid: [
+              "Thanked him for the praise, then addressed the wait head-on instead of ignoring it",
+              "Apologized plainly, without excuses",
+              "Named a concrete fix — tighter scheduling — so the reply reads as action, not words",
+              "Invited him back for a smoother visit"
+            ]
+          },
+          {
+            id: "priya",
+            name: "Priya K.",
+            initial: "P",
+            stars: 2,
+            date: "Oct 29, 2026",
+            text: "The cleaning itself was fine, but I was charged for something I didn't expect, and no one explained it before I left. I went home feeling confused about the bill. I wish someone had walked me through it first.",
+            replies: {
+              warm: "Thank you for sharing this, Priya — we're glad the cleaning itself went well, and we're sorry the billing side left you confused. That's on us: you should never leave unsure about a charge. Please call us at (512) 555-0148 and we'll happily walk through your bill line by line and sort out anything that isn't right. We'd love the chance to make this right.",
+              professional: "Thank you for your review, Priya. We apologize for the unexpected charge and for not explaining it clearly before you left — transparent billing is our responsibility. Please contact our office at (512) 555-0148 so we can review the charge with you in detail and resolve anything that was billed in error.",
+              apologetic: "Priya, we sincerely apologize. You should never be surprised by a charge, and we're sorry we didn't walk you through it before you left. Please call us at (512) 555-0148 or stop by the front desk — we'll go through your statement together, line by line, and correct anything that was billed in error. Your trust matters more to us than one invoice."
+            },
+            outcome: "Priya feels heard and has a clear next step, and the public reply shows every future patient that this studio takes concerns seriously and fixes them — instead of leaving a 2-star review unanswered.",
+            aiDid: [
+              "Acknowledged the billing confusion without getting defensive",
+              "Apologized and took clear ownership of the mistake",
+              "Moved the resolution offline with a direct phone number, so her personal billing details stay private",
+              "Kept the studio's calm, helpful tone throughout"
+            ]
+          }
+        ];
+
+        var grid = document.getElementById("reviewGrid");
+        var step2 = document.getElementById("step2");
+        var outcomeSec = document.getElementById("outcome");
+        var recap = document.getElementById("recap");
+        var draftBtn = document.getElementById("draftBtn");
+        var drafting = document.getElementById("drafting");
+        var draftingText = document.getElementById("draftingText");
+        var shimmerLines = document.getElementById("shimmerLines");
+        var replyBox = document.getElementById("replyBox");
+        var replyText = document.getElementById("replyText");
+        var postBtn = document.getElementById("postBtn");
+        var timerChip = document.getElementById("timerChip");
+        var timerText = document.getElementById("timerText");
+        var toneBtns = Array.prototype.slice.call(document.querySelectorAll(".tone-btn"));
+
+        var selected = null;
+        var currentTone = "warm";
+        var startTime = null;
+        var timerInterval = null;
+        var busy = false;
+
+        var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        function reviewCardInner(r) {
+          return (
+            '<div class="review-head">' +
+              '<span class="avatar" aria-hidden="true">' + r.initial + "</span>" +
+              '<span><span class="reviewer">' + r.name + '</span><br><span class="review-date">' + r.date + "</span></span>" +
+              '<span class="via">via Google</span>' +
+            "</div>" +
+            starsHTML(r.stars) +
+            '<p class="review-text">' + r.text + "</p>" +
+            '<span class="pick-tag">Tap to respond to this review →</span>'
+          );
+        }
+
+        REVIEWS.forEach(function (r) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "review-card";
+          b.setAttribute("data-id", r.id);
+          b.setAttribute("aria-pressed", "false");
+          b.innerHTML = reviewCardInner(r);
+          b.addEventListener("click", function () { pickReview(r, b); });
+          grid.appendChild(b);
+        });
+
+        function setDot(n, state) {
+          var d = document.getElementById("dot-" + n);
+          d.classList.remove("active", "done");
+          if (state) d.classList.add(state);
+        }
+
+        function fmtElapsed(sec) {
+          if (sec < 60) return sec + "s";
+          return Math.floor(sec / 60) + "m " + (sec % 60) + "s";
+        }
+
+        function startTimer() {
+          startTime = Date.now();
+          timerChip.classList.add("on");
+          timerText.textContent = "0s";
+          clearInterval(timerInterval);
+          timerInterval = setInterval(function () {
+            timerText.textContent = fmtElapsed(Math.floor((Date.now() - startTime) / 1000));
+          }, 250);
+        }
+
+        function stopTimer() {
+          clearInterval(timerInterval);
+          if (!startTime) return 0;
+          return Math.max(1, Math.round((Date.now() - startTime) / 1000));
+        }
+
+        function pickReview(r, btn) {
+          if (busy) return;
+          selected = r;
+          currentTone = "warm";
+          Array.prototype.forEach.call(grid.children, function (c) {
+            c.classList.remove("selected");
+            c.setAttribute("aria-pressed", "false");
+          });
+          btn.classList.add("selected");
+          btn.setAttribute("aria-pressed", "true");
+
+          recap.innerHTML =
+            '<div class="review-head">' +
+              '<span class="avatar" aria-hidden="true">' + r.initial + "</span>" +
+              '<span><span class="reviewer">' + r.name + '</span><br><span class="review-date">' + r.date + " · Google review</span></span>" +
+            "</div>" +
+            starsHTML(r.stars) +
+            '<p class="review-text">' + r.text + "</p>";
+
+          draftBtn.disabled = false;
+          draftBtn.textContent = "Draft AI reply";
+          replyBox.classList.add("hidden");
+          outcomeSec.classList.add("hidden");
+          step2.classList.remove("hidden");
+
+          setDot(1, "done"); setDot(2, "active"); setDot(3, ""); setDot(4, "");
+          setToneButtons("warm");
+
+          startTimer();
+          step2.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
+        }
+
+        function setToneButtons(tone) {
+          toneBtns.forEach(function (b) {
+            b.setAttribute("aria-pressed", b.getAttribute("data-tone") === tone ? "true" : "false");
+          });
+        }
+
+        function runDrafting(label, ms, done) {
+          busy = true;
+          draftingText.textContent = label;
+          drafting.classList.add("on");
+          shimmerLines.classList.remove("hidden");
+          replyBox.classList.add("hidden");
+          setTimeout(function () {
+            drafting.classList.remove("on");
+            shimmerLines.classList.add("hidden");
+            replyBox.classList.remove("hidden");
+            busy = false;
+            done();
+            replyBox.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "nearest" });
+          }, reducedMotion ? 500 : ms);
+        }
+
+        draftBtn.addEventListener("click", function () {
+          if (!selected || busy) return;
+          draftBtn.disabled = true;
+          draftBtn.textContent = "Drafting…";
+          runDrafting("AI is reading the review and drafting…", 2400, function () {
+            replyText.value = selected.replies[currentTone];
+            setDot(2, "done"); setDot(3, "active");
+          });
+        });
+
+        toneBtns.forEach(function (b) {
+          b.addEventListener("click", function () {
+            if (!selected || busy) return;
+            var tone = b.getAttribute("data-tone");
+            if (tone === currentTone && !replyBox.classList.contains("hidden")) return;
+            currentTone = tone;
+            setToneButtons(tone);
+            runDrafting("Re-drafting in a " + b.textContent.trim().toLowerCase() + " tone…", 1300, function () {
+              replyText.value = selected.replies[tone];
+              setDot(3, "active");
+            });
+          });
+        });
+
+        postBtn.addEventListener("click", function () {
+          if (!selected || busy) return;
+          busy = true;
+          postBtn.disabled = true;
+          postBtn.textContent = "Posting…";
+          setDot(3, "done"); setDot(4, "active");
+          setTimeout(function () {
+            var secs = stopTimer();
+            document.getElementById("postedSeconds").textContent = secs;
+            document.getElementById("postedUnit").textContent = secs === 1 ? "second" : "seconds";
+            document.getElementById("outcomeText").textContent = selected.outcome;
+            document.getElementById("postedReplyText").textContent = replyText.value;
+            var list = document.getElementById("aiDidList");
+            list.innerHTML = "";
+            selected.aiDid.forEach(function (item) {
+              var li = document.createElement("li");
+              li.textContent = item;
+              list.appendChild(li);
+            });
+            timerChip.classList.remove("on");
+            outcomeSec.classList.remove("hidden");
+            postBtn.disabled = false;
+            postBtn.textContent = "Post reply (simulated)";
+            setDot(4, "done");
+            busy = false;
+            outcomeSec.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
+          }, reducedMotion ? 400 : 1400);
+        });
+
+        document.getElementById("restartBtn").addEventListener("click", function () {
+          selected = null;
+          currentTone = "warm";
+          clearInterval(timerInterval);
+          startTime = null;
+          timerChip.classList.remove("on");
+          Array.prototype.forEach.call(grid.children, function (c) {
+            c.classList.remove("selected");
+            c.setAttribute("aria-pressed", "false");
+          });
+          step2.classList.add("hidden");
+          outcomeSec.classList.add("hidden");
+          replyBox.classList.add("hidden");
+          draftBtn.disabled = false;
+          draftBtn.textContent = "Draft AI reply";
+          replyText.value = "";
+          setToneButtons("warm");
+          setDot(1, "active"); setDot(2, ""); setDot(3, ""); setDot(4, "");
+          document.getElementById("step1").scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
+        });
+      })();
+    </script>
+  </body>
+</html>
